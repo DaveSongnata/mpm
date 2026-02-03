@@ -2,11 +2,16 @@
 :: mpm Local Installer for Windows
 :: Just double-click this file or run: install.bat
 
+:: IMPORTANT: Change to the directory where this script is located
+cd /d "%~dp0"
+
 echo.
 echo  =====================================
 echo   mpm - Maven Package Manager
 echo   Local Installation
 echo  =====================================
+echo.
+echo  Installing from: %CD%
 echo.
 
 :: Check for Java

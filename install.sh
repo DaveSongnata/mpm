@@ -5,11 +5,16 @@
 
 set -e
 
+# Change to the directory where this script is located
+cd "$(dirname "$0")"
+
 echo ""
 echo "  ====================================="
 echo "   mpm - Maven Package Manager"
 echo "   Local Installation"
 echo "  ====================================="
+echo ""
+echo "  Installing from: $(pwd)"
 echo ""
 
 # Colors
