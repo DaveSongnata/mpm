@@ -2,7 +2,7 @@
 :: mpm Local Installer for Windows
 :: Just double-click this file or run: install.bat
 
-:: IMPORTANT: Change to the directory where this script is located
+:: Change to the directory where this script is located
 cd /d "%~dp0"
 
 echo.
@@ -51,49 +51,21 @@ set "MPM_BIN=%MPM_HOME%\bin"
 
 if not exist "%MPM_BIN%" mkdir "%MPM_BIN%"
 
-:: Copy JAR and wrapper
+:: Copy JAR
 copy /Y "target\mpm.jar" "%MPM_BIN%\mpm.jar" >nul
 echo [OK] Copied mpm.jar to %MPM_BIN%
 
 :: Create wrapper script
-(
-echo @echo off
-echo java -jar "%%USERPROFILE%%\.mpm\bin\mpm.jar" %%*
-) > "%MPM_BIN%\mpm.bat"
+echo @echo off> "%MPM_BIN%\mpm.bat"
+echo java -jar "%%USERPROFILE%%\.mpm\bin\mpm.jar" %%*>> "%MPM_BIN%\mpm.bat"
 echo [OK] Created mpm.bat wrapper
 
-:: Add to PATH using PowerShell (more reliable than setx)
+:: Add to PATH using PowerShell (single line command)
 echo.
 echo Configuring PATH...
 
-:: Check if already in PATH
-echo %PATH% | find /i ".mpm\bin" >nul
-if %ERRORLEVEL% equ 0 (
-    echo [OK] Already in PATH
-    goto :success
-)
+powershell -NoProfile -Command "$p=[Environment]::GetEnvironmentVariable('Path','User');if($p-notlike'*.mpm*'){[Environment]::SetEnvironmentVariable('Path',$p+';%MPM_BIN%','User');Write-Host '[OK] Added to PATH' -ForegroundColor Green}else{Write-Host '[OK] Already in PATH' -ForegroundColor Green}"
 
-:: Use PowerShell to add to User PATH (no character limit, no admin needed)
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$mpmBin = '%MPM_BIN%'; ^
-    $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User'); ^
-    if ($currentPath -notlike \"*$mpmBin*\") { ^
-        $newPath = $currentPath + ';' + $mpmBin; ^
-        [Environment]::SetEnvironmentVariable('Path', $newPath, 'User'); ^
-        Write-Host '[OK] Added to PATH' -ForegroundColor Green; ^
-    } else { ^
-        Write-Host '[OK] Already in PATH' -ForegroundColor Green; ^
-    }"
-
-if %ERRORLEVEL% neq 0 (
-    echo [WARN] Could not add to PATH automatically.
-    echo Please add this to your PATH manually: %MPM_BIN%
-    echo.
-    echo Or run this in PowerShell as Administrator:
-    echo   [Environment]::SetEnvironmentVariable('Path', $env:Path + ';%MPM_BIN%', 'User')
-)
-
-:success
 echo.
 echo  =====================================
 echo   Installation complete!
@@ -101,7 +73,5 @@ echo  =====================================
 echo.
 echo   IMPORTANT: Close this terminal and open a new one,
 echo   then run: mpm help
-echo.
-echo   Installation location: %MPM_BIN%
 echo.
 pause
