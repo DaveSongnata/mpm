@@ -6,7 +6,10 @@ import dev.mpm.pom.PomEditor;
 import dev.mpm.util.Console;
 import dev.mpm.util.MavenExecutor;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -64,11 +67,15 @@ public class InstallCommand implements Command {
         }
 
         // Check if pom.xml exists
-        PomEditor pom = new PomEditor(Path.of("pom.xml"));
+        Path pomPath = Path.of("pom.xml");
+        PomEditor pom = new PomEditor(pomPath);
+
         if (!pom.exists()) {
-            Console.error("pom.xml not found in current directory");
-            Console.info("Run 'mpm init' to create a new project");
-            return 1;
+            pomPath = handleMissingPom();
+            if (pomPath == null) {
+                return 1; // User chose to abort
+            }
+            pom = new PomEditor(pomPath);
         }
 
         try {
@@ -127,7 +134,8 @@ public class InstallCommand implements Command {
 
                 // Resolve dependencies
                 Console.info("Downloading dependencies...");
-                boolean resolved = MavenExecutor.resolveDependencies(Path.of(".").toFile());
+                Path workingDir = pomPath.toAbsolutePath().getParent();
+                boolean resolved = MavenExecutor.resolveDependencies(workingDir.toFile());
 
                 if (resolved) {
                     Console.success("Installed " + spec.groupId + ":" + spec.artifactId + "@" + spec.version);
@@ -232,6 +240,76 @@ public class InstallCommand implements Command {
                 scope.equals("runtime") ||
                 scope.equals("system") ||
                 scope.equals("import");
+    }
+
+    /**
+     * Handles the case when pom.xml is not found.
+     * Prompts the user to create one, specify a path, or abort.
+     *
+     * @return the Path to the pom.xml to use, or null if aborted
+     */
+    private Path handleMissingPom() {
+        Console.warn("pom.xml not found in current directory");
+        Console.println();
+        Console.println("What would you like to do?");
+        Console.println("  " + Console.cyan("[1]") + " Create new pom.xml here");
+        Console.println("  " + Console.cyan("[2]") + " Specify path to existing pom.xml");
+        Console.println("  " + Console.cyan("[3]") + " Abort");
+        Console.println();
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            Console.print("Choose [1/2/3]: ");
+            String choice = reader.readLine();
+
+            if (choice == null) {
+                return null;
+            }
+
+            choice = choice.trim();
+
+            switch (choice) {
+                case "1":
+                    // Create new pom.xml using InitCommand
+                    Console.println();
+                    InitCommand initCommand = new InitCommand();
+                    int result = initCommand.execute(new String[]{"--yes"});
+                    if (result == 0) {
+                        return Path.of("pom.xml");
+                    }
+                    return null;
+
+                case "2":
+                    // Ask for path
+                    Console.print("Enter path to pom.xml: ");
+                    String pathInput = reader.readLine();
+                    if (pathInput == null || pathInput.trim().isEmpty()) {
+                        Console.error("No path provided");
+                        return null;
+                    }
+
+                    Path customPath = Path.of(pathInput.trim());
+                    if (!Files.exists(customPath)) {
+                        Console.error("File not found: " + customPath);
+                        return null;
+                    }
+
+                    if (!customPath.getFileName().toString().equals("pom.xml")) {
+                        Console.warn("File is not named pom.xml, but will try to use it");
+                    }
+
+                    return customPath;
+
+                case "3":
+                default:
+                    Console.info("Aborted");
+                    return null;
+            }
+
+        } catch (IOException e) {
+            Console.error("Error reading input: " + e.getMessage());
+            return null;
+        }
     }
 
     /**

@@ -22,24 +22,37 @@ With **mpm**, it's just one command. Like npm, but for Maven.
 
 ## Installation
 
-### Windows (PowerShell)
+### From Source (Recommended)
 
+```bash
+git clone https://github.com/DaveSongnata/mpm.git
+cd mpm
+```
+
+**Windows:** Double-click `install.bat` or run:
+```cmd
+install.bat
+```
+
+**Linux / macOS:**
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Then open a new terminal and run `mpm help`.
+
+### One-liner Install (from releases)
+
+**Windows (PowerShell):**
 ```powershell
 iwr https://raw.githubusercontent.com/DaveSongnata/mpm/main/installer/install.ps1 -useb | iex
 ```
 
-### Linux / macOS
-
+**Linux / macOS:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DaveSongnata/mpm/main/installer/install.sh | bash
 ```
-
-### Manual Installation
-
-1. Download `mpm.jar` from [Releases](https://github.com/DaveSongnata/mpm/releases)
-2. Place it in `~/.mpm/bin/`
-3. Add `~/.mpm/bin` to your PATH
-4. Create wrapper script (see `bin/mpm.bat` or `bin/mpm`)
 
 ## Requirements
 
