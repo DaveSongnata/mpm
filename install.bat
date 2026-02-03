@@ -62,29 +62,46 @@ echo java -jar "%%USERPROFILE%%\.mpm\bin\mpm.jar" %%*
 ) > "%MPM_BIN%\mpm.bat"
 echo [OK] Created mpm.bat wrapper
 
-:: Add to PATH
+:: Add to PATH using PowerShell (more reliable than setx)
 echo.
-echo Checking PATH...
-echo %PATH% | find /i "%MPM_BIN%" >nul
-if %ERRORLEVEL% neq 0 (
-    echo Adding mpm to PATH...
-    setx PATH "%PATH%;%MPM_BIN%" >nul 2>&1
-    if %ERRORLEVEL% equ 0 (
-        echo [OK] Added to PATH
-    ) else (
-        echo [WARN] Could not add to PATH automatically.
-        echo Please add this to your PATH manually: %MPM_BIN%
-    )
-) else (
+echo Configuring PATH...
+
+:: Check if already in PATH
+echo %PATH% | find /i ".mpm\bin" >nul
+if %ERRORLEVEL% equ 0 (
     echo [OK] Already in PATH
+    goto :success
 )
 
+:: Use PowerShell to add to User PATH (no character limit, no admin needed)
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$mpmBin = '%MPM_BIN%'; ^
+    $currentPath = [Environment]::GetEnvironmentVariable('Path', 'User'); ^
+    if ($currentPath -notlike \"*$mpmBin*\") { ^
+        $newPath = $currentPath + ';' + $mpmBin; ^
+        [Environment]::SetEnvironmentVariable('Path', $newPath, 'User'); ^
+        Write-Host '[OK] Added to PATH' -ForegroundColor Green; ^
+    } else { ^
+        Write-Host '[OK] Already in PATH' -ForegroundColor Green; ^
+    }"
+
+if %ERRORLEVEL% neq 0 (
+    echo [WARN] Could not add to PATH automatically.
+    echo Please add this to your PATH manually: %MPM_BIN%
+    echo.
+    echo Or run this in PowerShell as Administrator:
+    echo   [Environment]::SetEnvironmentVariable('Path', $env:Path + ';%MPM_BIN%', 'User')
+)
+
+:success
 echo.
 echo  =====================================
 echo   Installation complete!
 echo  =====================================
 echo.
-echo   Close this terminal and open a new one,
+echo   IMPORTANT: Close this terminal and open a new one,
 echo   then run: mpm help
+echo.
+echo   Installation location: %MPM_BIN%
 echo.
 pause
